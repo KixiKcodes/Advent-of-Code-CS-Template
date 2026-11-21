@@ -8,14 +8,14 @@ class Program {
             Console.WriteLine("Invalid input."); // Usage: dotnet run -- <day> <part> [optional "test" to solve using the test input]
             return 1;
         }
-        if (!int.TryParse(args[0], out int day) || !int.TryParse(args[1], out int part) || day < 1 || day > MaximumDays || part < 1 || part > 2) {
+        if (!int.TryParse(args[0], out int day) || !int.TryParse(args[1], out int part) || day < 0 || day > MaximumDays || part < 1 || part > 2) {
             Console.WriteLine("Invalid day or part.");
             return 1;
         }
 
         bool test = args.Length == 3 && args[2] == "test";
         Day? selectedDay = day switch {
-            1 => new Day1(),
+            0 => new Day00(), // TEST DAY
             // Add days...
             _ => null
         };

@@ -29,15 +29,46 @@ public static class Utils {
         ];
     }
 
+    public readonly struct Grid<T> {
+        private readonly T[,] cells;
+        public int Height { get; }
+        public int Width { get; }
+
+        public Grid(IReadOnlyList<string> lines, Func<char, T> converter) {
+            Height = lines.Count;
+            Width = lines[0].Length;
+            cells = new T[Height, Width];
+
+            for (int r = 0; r < Height; r++)
+                for (int c = 0; c < Width; c++)
+                    cells[r, c] = converter(lines[r][c]);
+        }
+
+        public T this[int row, int col] {
+            get => cells[row, col];
+            set => cells[row, col] = value;
+        }
+
+        public bool IsInBounds(Position pos) {
+            return pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height;
+        }
+
+        public void Print() {
+            for (int r = 0; r < Height; r++) {
+                for (int c = 0; c < Width; c++)
+                    Console.Write(cells[r, c]);
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+    }
+
+
     public static List<string> ParseLines(string inputPath) {
         return [.. File.ReadAllLines(inputPath)];
     }
 
     public static string ParseText(string inputPath) {
         return File.ReadAllText(inputPath);
-    }
-
-    public static bool IsInBounds(int x, int y, int width, int height) {
-        return x >= 0 && x < width && y >= 0 && y < height;
     }
 }

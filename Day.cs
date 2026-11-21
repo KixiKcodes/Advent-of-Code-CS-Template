@@ -7,7 +7,7 @@ public abstract class Day {
     public void LoadInput(bool test) {
         string directory = test ? "tests" : "inputs";
 
-        InputPath = Path.Combine( "resources", directory, $"Day{DayNumber}.txt");
+        InputPath = Path.Combine( "resources", directory, $"Day{DayNumber:D2}.txt");
         if (!File.Exists(InputPath))
             throw new FileNotFoundException($"Missing {(test ? "test" : "input")} file for Day {DayNumber}.", InputPath);
     }
