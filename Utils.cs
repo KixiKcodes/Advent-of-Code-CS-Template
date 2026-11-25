@@ -1,4 +1,4 @@
-namespace AdventOfCode2026;
+namespace AdventOfCodeXXXX;
 
 public static class Utils {
     public readonly record struct Position(int X, int Y) {

@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    printf 'Usage: aoc <day> <part> [test] | aoc new <day number> | aoc create <year number>\n' >&2
+}
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+stage=""
+cleanup() {
+    if [[ -n "$stage" && -d "$stage" ]]; then
+        rm -rf -- "$stage"
+    fi
+}
+trap cleanup EXIT
+
+new_day() {
+    local input_number="$1"
+    local day day_padded class_name project_namespace
+
+    if [[ ! "$input_number" =~ ^[0-9]{1,2}$ ]]; then
+        printf 'Day number must be an integer from 1 to 12.\n' >&2
+        return 2
+    fi
+    day=$((10#$input_number))
+    if (( day < 1 || day > 12 )); then
+        printf 'Day number must be an integer from 1 to 12.\n' >&2
+        return 2
+    fi
+
+    printf -v day_padded '%02d' "$day"
+    class_name="Day${day_padded}"
+    project_namespace="$(awk '/namespace[[:space:]]+[[:alnum:]_.]+;/ { line = $0; sub(/^.*namespace[[:space:]]+/, "", line); sub(/;.*/, "", line); print line; exit }' Program.cs)"
+    if [[ ! "$project_namespace" =~ ^[[:alnum:]_.]+$ ]]; then
+        printf 'Could not determine the project namespace from Program.cs.\n' >&2
+        return 1
+    fi
+
+    if [[ -e "Days/${class_name}.cs" ||
+          -e "Resources/inputs/Day${day_padded}.txt" ||
+          -e "Resources/tests/Day${day_padded}.txt" ]] ||
+        grep -Eq "^[[:space:]]*${day}[[:space:]]*=>" Program.cs; then
+        printf 'Day %s already exists or is already registered.\n' "$day_padded" >&2
+        return 1
+    fi
+
+    if [[ ! -w Program.cs || ! -w Days || ! -w Resources/inputs ||
+          ! -w Resources/tests ]]; then
+        printf 'This project is not writable; cannot create day %s.\n' "$day_padded" >&2
+        return 1
+    fi
+
+    stage="$(mktemp -d "$PWD/.aoc-new.XXXXXX")"
+
+    mkdir -p "$stage/Days" "$stage/Resources/inputs" "$stage/Resources/tests"
+    sed -e "s/__PROJECT_NAMESPACE__/${project_namespace}/g" \
+        -e "s/__DAY_CLASS__/${class_name}/g" \
+        -e "s/__DAY_NUMBER__/${day}/g" > "$stage/Days/${class_name}.cs" <<'DAY_TEMPLATE'
+using static __PROJECT_NAMESPACE__.Utils;
+
+namespace __PROJECT_NAMESPACE__.Days;
+
+class __DAY_CLASS__() : Day<Type /*replace with parsed input type*/>(__DAY_NUMBER__) {
+    public override Type ParseInput() {
+
+
+        return null! /*return the parsed input type*/;
+    }
+
+    public override object PartOne(Type parsedInput) {
+        int result = 0;
+
+        
+
+        return result;
+    }
+
+    public override object PartTwo(Type parsedInput) {
+        int result = 0;
+
+        
+
+        return result;
+    }
+}
+DAY_TEMPLATE
+
+    if ! awk -v entry="${day} => new Days.${class_name}()," '
+        /\/\/ Add days: XX => new DayXX\(\)/ {
+            marker_count++
+            print "            " entry
+        }
+        { print }
+        END { if (marker_count != 1) exit 1 }
+    ' Program.cs > "$stage/Program.cs"; then
+        printf 'Could not find exactly one day-registration marker in Program.cs.\n' >&2
+        return 1
+    fi
+
+    : > "$stage/Resources/inputs/Day${day_padded}.txt"
+    : > "$stage/Resources/tests/Day${day_padded}.txt"
+
+    mkdir -p Resources/tests
+    mv -- "$stage/Days/${class_name}.cs" "Days/${class_name}.cs"
+    mv -- "$stage/Resources/inputs/Day${day_padded}.txt" "Resources/inputs/Day${day_padded}.txt"
+    mv -- "$stage/Resources/tests/Day${day_padded}.txt" "Resources/tests/Day${day_padded}.txt"
+    mv -- "$stage/Program.cs" Program.cs
+
+    printf 'Created day %s: Days/%s.cs and input/test files.\n' "$day_padded" "$class_name"
+}
+
+create_year() {
+    local year="$1"
+    local sdk_version project_name target generated project_file target_framework
+
+    if [[ ! "$year" =~ ^[0-9]{4}$ ]]; then
+        printf 'Year must be a four-digit number.\n' >&2
+        return 2
+    fi
+    if ! command -v dotnet >/dev/null 2>&1; then
+        printf 'dotnet is not installed or not on PATH.\n' >&2
+        return 1
+    fi
+    if ! command -v git >/dev/null 2>&1; then
+        printf 'git is not installed or not on PATH.\n' >&2
+        return 1
+    fi
+
+    sdk_version="$(dotnet --list-sdks | awk '{ print $1 }' | sort -V | tail -n 1)"
+    if [[ -z "$sdk_version" ]]; then
+        printf 'No .NET SDK is installed.\n' >&2
+        return 1
+    fi
+
+    project_name="AdventOfCode${year}"
+    target="$PWD/$project_name"
+    if [[ -e "$target" || -L "$target" ]]; then
+        printf 'Cannot create %s: that path already exists.\n' "$target" >&2
+        return 1
+    fi
+
+    if [[ -f "$script_dir/.template.config/template.json" ]]; then
+        dotnet new install "$script_dir" --force
+    fi
+
+    stage="$(mktemp -d "$PWD/.aoc-year.XXXXXX")"
+    generated="$stage/$project_name"
+    dotnet new aoc-year --name "$project_name" --output "$generated"
+    chmod +x "$generated/aoc"
+
+    project_file="$generated/${project_name}.csproj"
+    if [[ ! -f "$project_file" ]] ||
+        [[ "$(grep -Ec '<TargetFramework>net[0-9]+\.0</TargetFramework>' "$project_file")" -ne 1 ]]; then
+        printf 'The generated project is missing the expected project file or target framework.\n' >&2
+        return 1
+    fi
+
+    target_framework="net${sdk_version%%.*}.0"
+    sed -E "s#<TargetFramework>net[0-9]+\\.0</TargetFramework>#<TargetFramework>${target_framework}</TargetFramework>#" \
+        "$project_file" > "$stage/${project_name}.csproj"
+    mv -- "$stage/${project_name}.csproj" "$project_file"
+
+    mkdir -p "$generated/Resources/tests"
+    git -C "$generated" init --initial-branch=main >/dev/null
+    mv -- "$generated" "$target"
+
+    printf 'Created %s using .NET SDK %s (%s) and initialized Git on main.\n' \
+        "$target" "$sdk_version" "$target_framework"
+}
+
+if [[ "${1:-}" == "new" ]]; then
+    if [[ $# -ne 2 ]]; then
+        usage
+        exit 2
+    fi
+    new_day "$2"
+elif [[ "${1:-}" == "create" ]]; then
+    if [[ $# -ne 2 ]]; then
+        usage
+        exit 2
+    fi
+    create_year "$2"
+else
+    if ! command -v dotnet >/dev/null 2>&1; then
+        printf 'dotnet is not installed or not on PATH.\n' >&2
+        exit 1
+    fi
+    exec dotnet run -- "$@"
+fi

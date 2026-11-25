@@ -31,7 +31,7 @@ Thumbs.db
 *.sln
 
 # Inputs
-resources/inputs/*.txt
+Resources/inputs/*.txt
 
 # Notes
 .excalidraw
