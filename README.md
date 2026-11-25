@@ -15,7 +15,7 @@ git clone https://github.com/KixiKcodes/Advent-of-Code-CS-Template.git && ./Adve
 
 - `aoc [day] [part] [optional: "test"]` will run the day and part with either the real or test input. This calls the actual Program through dotnet directly.
 - `aoc new [day number]` will create the new day class in `Days` and add it to the program switch statement. It will also automatically create the input files.
-- `aoc create [year number]` will use the dotnet template to generate an entirely new AOC project as you see it here. From there on you can use the pther commands to create and run days.
+- `aoc create [year number]` will use the .NET template to generate a new AOC project. Use the installed `aoc` command from the new project directory to create and run days.
 
 ## Template Project Structure
 

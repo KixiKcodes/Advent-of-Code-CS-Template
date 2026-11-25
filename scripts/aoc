@@ -86,7 +86,7 @@ class __DAY_CLASS__() : Day<Type /*replace with parsed input type*/>(__DAY_NUMBE
 DAY_TEMPLATE
 
     if ! awk -v entry="${day} => new Days.${class_name}()," '
-        /\/\/ Add days: XX => new DayXX\(\)/ {
+        /\/\/ Add days: XX => new Days\.DayXX\(\)/ {
             marker_count++
             print "            " entry
         }
@@ -146,7 +146,6 @@ create_year() {
     stage="$(mktemp -d "$PWD/.aoc-year.XXXXXX")"
     generated="$stage/$project_name"
     dotnet new aoc-year --name "$project_name" --output "$generated"
-    chmod +x "$generated/aoc"
 
     project_file="$generated/${project_name}.csproj"
     if [[ ! -f "$project_file" ]] ||
