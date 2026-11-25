@@ -2,13 +2,13 @@
 
 This is my template for Advent of Code designed for C# on Linux.
 
-There is a script called `aoc` which can handle a few different command to make your life easier.
-Additionally, you can automatically set it up in your `/.local/bin` with the `setup.sh` script.
+There is a script called `aoc` which can handle a few different commands to make your life easier.
+The `setup.sh` script installs it to `~/.local/bin` and installs the `aoc-year` .NET template for the current user, so both can be used outside this repository.
 
 ## Single Command Install
 
 ```sh
-git clone https://github.com/KixiKcodes/Advent-of-Code-CS-Template.git && chmod +x ./scripts/setup.sh && exec ./scripts/setup.sh
+git clone https://github.com/KixiKcodes/Advent-of-Code-CS-Template.git && ./Advent-of-Code-CS-Template/scripts/setup.sh
 ```
 
 ## AOC Commands
@@ -37,7 +37,7 @@ git clone https://github.com/KixiKcodes/Advent-of-Code-CS-Template.git && chmod 
 ├── Utils.cs                         # Shared grid, position, and parsing helpers
 └── scripts/
     ├── aoc                          # Runs solutions and creates days or year projects
-    └── setup.sh                     # Copies `aoc` into ~/.local/bin (run from scripts/)
+    └── setup.sh                     # Installs `aoc` into ~/.local/bin and the .NET template
 ```
 
 ## Day Class Format
